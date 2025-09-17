@@ -3,9 +3,12 @@
 
 #include <string>
 #include <vector>
+#include "RatingItem.h"
 
 const int NUMBUCKETS = 20;
-const std::string FILENAME = "";
+const string FILENAME = "";
+
+using namespace std;
 
 class RatingHash {
     private:
@@ -27,5 +30,6 @@ class RatingHash {
         void modifyItemFromList(int remove_item_value, int insert_item_value, string item_name, int item_rating);
         void removeItemFromList(int item_value);
         void writeToFile(string FILENAME);
+        RatingItem* getItem(const int item_value);
 };
 #endif

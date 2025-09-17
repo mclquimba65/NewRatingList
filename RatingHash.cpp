@@ -1,13 +1,10 @@
 #include "RatingHash.h"
-#include "RatingItem.h"
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
 #include <cmath>
 #include <algorithm>
-
-using namespace std;
 
 RatingHash::RatingHash(bool list_present) {
     m_rating_hash = new RatingItem*[NUMBUCKETS];
@@ -46,7 +43,6 @@ vector<RatingItem*> RatingHash::findAllSameRatings(const int item_rating) {
         }
         traversal_ptr = traversal_ptr->getNext();
     }
-
     return same_rating_vector;
 }
 
@@ -58,6 +54,7 @@ void RatingHash::updateAllValues() {
         while (update_value_ptr != nullptr) {
             update_value_ptr->setItemValue(value);
             value++;
+            update_value_ptr = update_value_ptr->getNext();
         }
     }
 }
@@ -257,8 +254,33 @@ void RatingHash::writeToFile(const string FILENAME) {
             traversal_ptr = traversal_ptr->getNext();
         }
     }
+    file_output.close();
 }
 
 int RatingHash::getNumElements() {
     return m_num_elements;
+}
+
+RatingItem* RatingHash::getItem(const int item_value) {
+    int hash_key = -1;
+    bool hash_key_found = false;
+    for (int i = NUMBUCKETS - 1; i >= 0; i--) {                 // Find the bucket containing the value in question
+        if (m_rating_hash[i] != nullptr) {
+            if (item_value >= m_rating_hash[i]->getItemValue()) {
+                hash_key = i;
+                hash_key_found = true;
+                break;
+            }
+        }
+    }
+    cout << item_value << endl;
+
+    RatingItem* traversal_ptr = m_rating_hash[hash_key];                        // Traverse through the bucket until value is found
+    while (traversal_ptr != nullptr) {
+        if (traversal_ptr->getItemValue() == item_value) {
+            return traversal_ptr;
+        }
+        traversal_ptr = traversal_ptr->getNext();
+    }
+    return nullptr;
 }
