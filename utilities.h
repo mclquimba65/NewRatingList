@@ -2,6 +2,7 @@
 #define UTILITIES_H
 
 #include "RatingHash.h"
+#include "Filename_AVL.h"
 #include <string>
 #include <iostream>
 #include <iomanip>
@@ -17,6 +18,10 @@ const int MAXQUITINPUT = 2;
 
 const int MINMODIFYINPUT = 1;
 const int MAXMODIFYINPUT = 3;
+
+const int MINFILENAMESINPUT = 1;
+
+const string INVALIDCHARACTERS = "\\/*:?\"<>|";
 
 using namespace std;
 
@@ -43,6 +48,16 @@ void saveList(RatingHash* main_hash_ptr);
 bool quit(RatingHash* main_hash_ptr);
 
 
+void displayFilenamesMenu(vector<string> filename_vector);
+
+void validateFilenamesSelect(const int filenames_input, vector<string>& filename_vector);
+void validateFilename(const string filename);
+string createValidFilename(const string filename);
+
+void addFile(Filename_AVL* filename_ptr, string& filename, vector<string>& filename_vector);
+void saveFilenames(Filename_AVL* filename_ptr);
+
+// Confirms if a character is a digit
 bool isDigit(const char char_digit) {
     if (char_digit >= '0' && char_digit <= '9') {
         return true;
@@ -50,6 +65,7 @@ bool isDigit(const char char_digit) {
     return false;
 }
 
+// Verifies if a string is a representation of an integer.
 void verifyInteger(const string string_number) {
     bool is_integer = true;
     int verify_start = 0;
@@ -117,19 +133,33 @@ void validateModifySelect(const int modify_input) {
     }
 }
 
+void validateFilename(const string filename) {
+    for (char character : filename) {
+        if (INVALIDCHARACTERS.find(character) != string::npos) {
+            throw runtime_error("Invalid Entry - Filename");
+        }
+    }
+}
+
+void validateFilenamesSelect(const int file_names_input, vector<string>& filename_vector) {
+    if (file_names_input < MINFILENAMESINPUT || file_names_input > (filename_vector.size() + 2)) {
+        throw runtime_error("Invalid Entry - Filename Select");
+    }
+}
+
 void displayMenu() {
-    ios default_stream(NULL);
+    ios default_stream(nullptr);
     default_stream.copyfmt(cout);
 
     cout << setfill('-') << setw(35) << right << "| " << "MENU" << setw(34) << left << " |" << endl;
     cout.copyfmt(default_stream);
 
-    cout << "(1) Preview Item List\n(2) Add Item To List\n(3) Remove Item From List\n(4) Modify Item From List\n(5) Search For Item In List\n(6) Save List\n (7) Quit" << endl;
+    cout << "(1) Preview Item List\n(2) Add Item To List\n(3) Remove Item From List\n(4) Modify Item From List\n(5) Search For Item In List\n(6) Save List\n(7) Quit" << endl;
     cout << endl;
 }
 
 void displayModifiedList(RatingHash* main_hash_ptr) {
-    ios default_stream(NULL);
+    ios default_stream(nullptr);
     default_stream.copyfmt(cout);
 
     cout << setfill('-') << setw(29) << right << "| " << "New Rating List" << setw(29) << left << " |" << endl;
@@ -142,8 +172,9 @@ void displayModifiedList(RatingHash* main_hash_ptr) {
     cout << "\n\n" << endl;
 }
 
+// The argument passed into this function should contain a vector with items that have equal ratings
 void displayEqualRatingItems(vector<RatingItem*> equal_rating_vector) {
-    ios default_stream(NULL);
+    ios default_stream(nullptr);
     default_stream.copyfmt(cout);
 
     cout << setfill('-') << setw(28) << right << "| " << "Equal Rated Items" << setw(28) << left << " |" << endl;
@@ -159,8 +190,23 @@ void displayEqualRatingItems(vector<RatingItem*> equal_rating_vector) {
     cout.copyfmt(default_stream);
 }
 
+void displayFilenamesMenu(vector<string> filename_vector) {
+    ios default_stream(nullptr);
+    default_stream.copyfmt(cout);
+
+    cout << setfill('-') << setw(32) << right << "| " << "Filenames" << setw(32) << left << " |" << endl;
+    cout.copyfmt(default_stream);
+
+    for (int i = 0; i < filename_vector.size(); i++) {
+        string filename_display = to_string(i + 1) + " " + filename_vector[i];
+        cout << filename_display << endl;
+    }
+    cout << to_string(filename_vector.size() + 1) << " " << "Create New File" << endl;
+    cout << to_string(filename_vector.size() + 2) << " " << "Exit" << endl;
+}
+
 void previewList(RatingHash* main_hash_ptr) {
-    ios default_stream(NULL);
+    ios default_stream(nullptr);
     default_stream.copyfmt(cout);
 
     cout << setfill('-') << setw(73) << left << "" << endl;
@@ -174,8 +220,10 @@ void previewList(RatingHash* main_hash_ptr) {
     cout << "\n\n" << endl;
 }
 
+// Argument is a ptr to a RatingHash object
+// Asks user input for creating the item and validates before calling member functions
 void addItem(RatingHash* main_hash_ptr) {
-    ios default_stream(NULL);
+    ios default_stream(nullptr);
     default_stream.copyfmt(cout);
 
     cout << setfill('-') << setw(73) << left << "" << endl;
@@ -199,7 +247,7 @@ void addItem(RatingHash* main_hash_ptr) {
         int int_item_rating = stoi(item_rating);
         validateRating(int_item_rating);
         vector<RatingItem*> same_rating_vector = main_hash_ptr->findAllSameRatings(int_item_rating);
-        if (same_rating_vector.size() != 0) {           // If there are same rated items in the list, ask for an additional value.
+        if (same_rating_vector.size() != 0) {           // If there are same rated items in the list, ask for the value of the item.
             displayEqualRatingItems(same_rating_vector);
             string item_value = "";
             cout << "[ Enter Item Value ]" << endl;
@@ -215,7 +263,7 @@ void addItem(RatingHash* main_hash_ptr) {
             main_hash_ptr->insertItemInList(-1, item_name, int_item_rating);
         }
     }
-    catch (runtime_error e) {
+    catch (runtime_error& e) {
         cout << "Error: " << e.what() << endl;
     }
 
@@ -223,12 +271,13 @@ void addItem(RatingHash* main_hash_ptr) {
     cout.copyfmt(default_stream);
 }
 
+// Asks user input for the value of the item to be removed.
 void removeItem(RatingHash* main_hash_ptr) {
     if (main_hash_ptr->getNumElements() == 0) {
         cout << "Unable To Remove Item: List Empty\n" << endl;
         return;
     }
-    ios default_stream(NULL);
+    ios default_stream(nullptr);
     default_stream.copyfmt(cout);
 
     cout << setfill('-') << setw(73) << left << "" << endl;
@@ -250,7 +299,7 @@ void removeItem(RatingHash* main_hash_ptr) {
         validateValue(int_item_value, main_hash_ptr->getNumElements());
         main_hash_ptr->removeItemFromList(int_item_value);
     }
-    catch (runtime_error e) {
+    catch (runtime_error& e) {
         cout << "Error: " << e.what() << endl;
     }
 
@@ -258,11 +307,15 @@ void removeItem(RatingHash* main_hash_ptr) {
     cout.copyfmt(default_stream);
 }
 
+// First asks user what item the user wants to modify.
+// Then, ask what attribute the user wants to modify.
+// If Item Rating or All is selected, then check through findAllSameRatings if there are any items with the same ratings in the list.
+// If there are, ask user for the specific value of the item for replacement.
 void modifyItem(RatingHash* main_hash_ptr) {
     if (main_hash_ptr->getNumElements() == 0) {
         cout << "Unable To Modify Item: List Empty\n" << endl;
     }
-    ios default_stream(NULL);
+    ios default_stream(nullptr);
     default_stream.copyfmt(cout);
 
     cout << setfill('-') << setw(73) << left << "" << endl;
@@ -281,7 +334,7 @@ void modifyItem(RatingHash* main_hash_ptr) {
         int_modify_item_value = stoi(item_value);
         validateValue(int_modify_item_value, main_hash_ptr->getNumElements());
     }
-    catch (runtime_error e) {
+    catch (runtime_error& e) {
         cout << "Error: " << e.what() << endl;
         displayModifiedList(main_hash_ptr);
         return;
@@ -300,7 +353,7 @@ void modifyItem(RatingHash* main_hash_ptr) {
         int_modify_input = stoi(modify_input);
         validateModifySelect(int_modify_input);
     }
-    catch (runtime_error e) {
+    catch (runtime_error& e) {
         cout << "Error: " << e.what() << endl;
         displayModifiedList(main_hash_ptr);
         return;
@@ -347,7 +400,7 @@ void modifyItem(RatingHash* main_hash_ptr) {
                     main_hash_ptr->modifyItemFromList(int_modify_item_value, -1, item_name, int_item_rating);
                 }
             }
-            catch (runtime_error e) {
+            catch (runtime_error& e) {
                 cout << "Error: " << e.what() << endl;
                 displayModifiedList(main_hash_ptr);
                 return;
@@ -382,7 +435,7 @@ void modifyItem(RatingHash* main_hash_ptr) {
                     main_hash_ptr->modifyItemFromList(int_modify_item_value, -1, item_name, int_item_rating);
                 }
             }
-            catch (runtime_error e) {
+            catch (runtime_error& e) {
                 cout << "Error: " << e.what() << endl;
                 displayModifiedList(main_hash_ptr);
                 return;
@@ -398,7 +451,7 @@ void modifyItem(RatingHash* main_hash_ptr) {
 }
 
 void searchForItem(RatingHash* main_hash_ptr) {
-    ios default_stream(NULL);
+    ios default_stream(nullptr);
     default_stream.copyfmt(cout);
 
     cout << setfill('-') << setw(73) << left << "" << endl;
@@ -415,20 +468,21 @@ void searchForItem(RatingHash* main_hash_ptr) {
     cout.copyfmt(default_stream);
 }
 
+// Writes the list to a file
 void saveList(RatingHash* main_hash_ptr) {
-    ios default_stream(NULL);
+    ios default_stream(nullptr);
     default_stream.copyfmt(cout);
 
     cout << setfill('-') << setw(73) << left << "" << endl;
     cout << "(6) Save List\n" << endl;
-    main_hash_ptr->writeToFile(FILENAME);
+    main_hash_ptr->writeToFile();
     cout << "List Saved!\n" << endl;
 
     cout.copyfmt(default_stream);
 }
 
 bool quit(RatingHash* main_hash_ptr) {
-    ios default_stream(NULL);
+    ios default_stream(nullptr);
     default_stream.copyfmt(cout);
 
     cout << setfill('-') << setw(73) << left << "" << endl;
@@ -457,11 +511,11 @@ bool quit(RatingHash* main_hash_ptr) {
             int int_option_input = stoi(option_input);
             validateQuitSelect(int_option_input);
             if (int_option_input == 1) {
-                main_hash_ptr->writeToFile(FILENAME);
+                main_hash_ptr->writeToFile();
                 return_value = true;
             }
         }
-        catch (runtime_error e) {
+        catch (runtime_error& e) {
             cout << "Error: " << e.what() << endl;
             error_encountered = true;
         }
@@ -469,4 +523,32 @@ bool quit(RatingHash* main_hash_ptr) {
 
     return return_value;
 }
+
+string createValidFilename(const string filename) {
+    string valid_filename = filename + ".txt";
+    return valid_filename;
+}
+
+void addFile(Filename_AVL* filename_ptr, string& filename, vector<string>& filename_vector) {
+    ios default_stream(nullptr);
+    default_stream.copyfmt(cout);
+
+    cout << "[ Enter New Filename (Do not include \".txt\") (Use invalid characters to exit) ]" << endl;
+    cout << "-> ";
+    getline(cin, filename);
+    try {
+        validateFilename(filename);
+        filename = createValidFilename(filename);
+        Filename new_file(filename, filename_vector.size() + 1);
+        filename_ptr->insertInAVL(new_file);
+    }
+    catch (runtime_error& e) {
+        cout << "Error: " << e.what() << endl;
+    }
+}
+
+void saveFilenames(Filename_AVL* filename_ptr) {
+    filename_ptr->writeToSpecialFile();
+}
+
 #endif

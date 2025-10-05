@@ -6,15 +6,14 @@
 #include <cmath>
 #include <algorithm>
 
-RatingHash::RatingHash(bool list_present) {
+RatingHash::RatingHash(string filename) {
     m_rating_hash = new RatingItem*[NUMBUCKETS];
     for (int i = 0; i < NUMBUCKETS; i++) {
         m_rating_hash[i] = nullptr;
     }
     m_num_elements = 0;
-    if (list_present) {
-        readFromFile(FILENAME);
-    }
+    m_filename = filename;
+    readFromFile(filename);
 }
 
 RatingHash::~RatingHash() {
@@ -29,8 +28,6 @@ RatingHash::~RatingHash() {
         }
     }
     delete[] m_rating_hash;
-
-    
 }
 
 vector<RatingItem*> RatingHash::findAllSameRatings(const int item_rating) {
@@ -72,9 +69,8 @@ void RatingHash::readFromFile(const string FILENAME) {
     ifstream file_input;
     file_input.open(FILENAME);
     if (!file_input.is_open()) {
-        cout << "Reading \"" << FILENAME << "\" Failed..." << "\"" << endl;
-        cout << "Terminating Program..." << endl;
-        exit(0);
+        cout << "File does not exist...\n" << endl;
+        return;
     }
 
     string word = "", line = "";
@@ -240,17 +236,18 @@ void RatingHash::displayAllSameNames(const string item_substring) {
     }
 }
 
-void RatingHash::writeToFile(const string FILENAME) {
-    ofstream file_output(FILENAME);
-    file_output << "\nScale: [-100, 100]\n" << setfill(' ') << endl;
+void RatingHash::writeToFile() {
+    ofstream file_output(m_filename);
+    file_output << "\nScale: [-100, 100]" << setfill(' ') << endl;
 
     RatingItem* traversal_ptr = nullptr;
     for (int i = 0; i < NUMBUCKETS; i++) {
         traversal_ptr = m_rating_hash[i];
         while (traversal_ptr != nullptr) {
+            file_output << endl;
             string temp_item_name = "-" + traversal_ptr->getItemName() + "-";
             string temp_item_value = to_string(traversal_ptr->getItemValue()) + ".";
-            file_output << setw(7) << left << temp_item_value << setw(49) << temp_item_name << setw(1) << right << "(" << traversal_ptr->getItemRating() << ")" << endl;
+            file_output << setw(7) << left << temp_item_value << setw(49) << temp_item_name << setw(1) << right << "(" << traversal_ptr->getItemRating() << ")";
             traversal_ptr = traversal_ptr->getNext();
         }
     }
